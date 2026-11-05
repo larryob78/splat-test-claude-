@@ -1,0 +1,5 @@
+{'k': 'inf', 'rot_deg': 301.6, 'tex_w': 1393, 'tex_h': 1201, 'view_disagreement': 5.38, 'px_per_mm_front': 7.62}
+{'k': 14.0, 'rot_deg': 280.8, 'tex_w': 1497, 'tex_h': 1201, 'view_disagreement': 5.18, 'px_per_mm_front': 8.19}
+{'k': 10.0, 'rot_deg': 272.8, 'tex_w': 1540, 'tex_h': 1201, 'view_disagreement': 5.2, 'px_per_mm_front': 8.42}
+{'k': 8.0, 'rot_deg': 266.0, 'tex_w': 1580, 'tex_h': 1201, 'view_disagreement': 5.22, 'px_per_mm_front': 8.64}
+{'k': 6.0, 'rot_deg': 254.9, 'tex_w': 1649, 'tex_h': 1201, 'view_disagreement': 5.26, 'px_per_mm_front': 9.02}
