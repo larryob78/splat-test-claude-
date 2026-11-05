@@ -1,0 +1,6 @@
+mitsuba==3.9.1
+numpy
+pillow
+scikit-image
+opencv-python-headless
+pytest
