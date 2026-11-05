@@ -1,0 +1,74 @@
+[
+ {
+  "case": "A uniform white dome, no floor, analytic exposure",
+  "n_px": 72127,
+  "excluded_L_gt_92_pct": 0.23,
+  "median_dE00": 7.69,
+  "p95_dE00": 13.55,
+  "mean_Lab": [
+   52.2,
+   60.6,
+   36.3
+  ],
+  "target_Lab": [
+   51.0,
+   77.5,
+   62.7
+  ],
+  "PASS_pipeline_check": false
+ },
+ {
+  "case": "B uniform dome + floor + 18% grey-card normalisation",
+  "n_px": 72121,
+  "excluded_L_gt_92_pct": 0.45,
+  "median_dE00": 7.46,
+  "p95_dE00": 12.83,
+  "mean_Lab": [
+   52.1,
+   61.7,
+   37.4
+  ],
+  "target_Lab": [
+   51.0,
+   77.5,
+   62.7
+  ],
+  "PASS_pipeline_check": false
+ },
+ {
+  "case": "C single softbox key light + grey-card normalisation",
+  "n_px": 72119,
+  "excluded_L_gt_92_pct": 0.38,
+  "median_dE00": 10.41,
+  "p95_dE00": 35.22,
+  "mean_Lab": [
+   41.0,
+   56.6,
+   37.9
+  ],
+  "target_Lab": [
+   51.0,
+   77.5,
+   62.7
+  ],
+  "PASS_pipeline_check": false
+ },
+ {
+  "case": "D CONTROL matte ink (no gloss), uniform dome, analytic exposure",
+  "n_px": 72127,
+  "excluded_L_gt_92_pct": 1.19,
+  "median_dE00": 0.2,
+  "p95_dE00": 0.69,
+  "mean_Lab": [
+   51.5,
+   76.5,
+   61.5
+  ],
+  "target_Lab": [
+   51.0,
+   77.5,
+   62.7
+  ],
+  "PASS_pipeline_check": true
+ }
+]

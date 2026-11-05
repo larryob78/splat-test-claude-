@@ -37,6 +37,7 @@ class Rig:
     width: int = 512
     height: int = 768
     ink_roughness: float = 0.18
+    ink_diffuse_only: bool = False            # control: matte ink (no lacquer gloss) to validate the colour measurement itself
     metal_roughness: float = 0.22
 
 def _light(l: Light, target):
@@ -70,6 +71,8 @@ def build_scene(rig: Rig, obj_path, art_path, mask_path, spec: CanSpec = CanSpec
         "floor": {"type": "rectangle", "to_world": T().rotate([1, 0, 0], -90).scale([8, 8, 1]).translate([0, -0.0005, 0]),
                   "bsdf": {"type": "diffuse", "reflectance": {"type": "rgb", "value": [0.5, 0.5, 0.5]}}},
     }
+    if rig.ink_diffuse_only:
+        d["can"]["bsdf"]["bsdf_1"] = {"type": "diffuse", "reflectance": {"type": "bitmap", "filename": art_path}}
     if not rig.floor: d.pop("floor")
     if rig.grey_card:
         d["card"] = {"type": "rectangle", "to_world": T().translate([0.085, 0.04, 0.02]).scale([0.03, 0.03, 1]),

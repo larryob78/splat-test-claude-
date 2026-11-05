@@ -1,3 +1,7 @@
 /home/user/splat-test-claude-/run_color_test.py:22: FutureWarning: `binary_erosion` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.erosion` instead. Note the pixel shift by 1 for even-sized footprints (see docstring notes).
   sel=binary_erosion(m["can"],disk(3))&band&wall
 {'case': 'A uniform white dome, no floor, analytic exposure', 'n_px': 72127, 'excluded_L_gt_92_pct': np.float64(0.23), 'median_dE00': 7.69, 'p95_dE00': 13.55, 'mean_Lab': [52.2, 60.6, 36.3], 'target_Lab': [51.0, 77.5, 62.7], 'PASS_pipeline_check': False}
+/home/user/splat-test-claude-/run_color_test.py:18: FutureWarning: `binary_erosion` is deprecated since version 0.26 and will be removed in version 0.28. Use `skimage.morphology.erosion` instead. Note the pixel shift by 1 for even-sized footprints (see docstring notes).
+  c=binary_erosion(m["card"],disk(2)); scale=0.18/rgb[c].mean(0)
+{'case': 'B uniform dome + floor + 18% grey-card normalisation', 'n_px': 72121, 'excluded_L_gt_92_pct': np.float64(0.45), 'median_dE00': 7.46, 'p95_dE00': 12.83, 'mean_Lab': [52.1, 61.7, 37.4], 'target_Lab': [51.0, 77.5, 62.7], 'PASS_pipeline_check': False}
+{'case': 'C single softbox key light + grey-card normalisation', 'n_px': 72119, 'excluded_L_gt_92_pct': np.float64(0.38), 'median_dE00': 10.41, 'p95_dE00': 35.22, 'mean_Lab': [41.0, 56.6, 37.9], 'target_Lab': [51.0, 77.5, 62.7], 'PASS_pipeline_check': False}

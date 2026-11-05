@@ -1,6 +1,7 @@
 """Brand-red check on RENDERS of the placeholder-art can (flat #F40009). This tests the rendering/measurement
 pipeline only. It is NOT the real pass criterion: that needs photos of the real can (+ official artwork)."""
-import json, numpy as np
+import json, warnings, numpy as np
+warnings.filterwarnings('ignore', category=FutureWarning)
 from skimage.morphology import disk, binary_erosion
 from skimage.color import rgb2lab, deltaE_ciede2000
 from brandsplats.hybrid.scene import *
@@ -28,7 +29,8 @@ def measure(name, rig, normalise, spp=256):
            PASS_pipeline_check=bool(np.median(dE)<=2.0 and np.percentile(dE,95)<=5.0))
     print(r); return r
 S=dict(width=600,height=1000,cam_distance=0.5,cam_elevation_deg=5)
-res=[measure("A uniform white dome, no floor, analytic exposure",Rig(env_kind="constant",env_scale=1.,lights=[],floor=False,**S),None),
-     measure("B uniform dome + floor + 18% grey-card normalisation",Rig(env_kind="constant",env_scale=1.,lights=[],grey_card=True,**S),"card"),
-     measure("C single softbox key light + grey-card normalisation",Rig(lights=[Light()],grey_card=True,**S),"card")]
-json.dump(res,open("outputs/color_test.json","w"),indent=1)
+if __name__=='__main__':
+    res=[measure("A uniform white dome, no floor, analytic exposure",Rig(env_kind="constant",env_scale=1.,lights=[],floor=False,**S),None),
+         measure("B uniform dome + floor + 18% grey-card normalisation",Rig(env_kind="constant",env_scale=1.,lights=[],grey_card=True,**S),"card"),
+         measure("C single softbox key light + grey-card normalisation",Rig(lights=[Light()],grey_card=True,**S),"card")]
+    json.dump(res,open("outputs/color_test.json","w"),indent=1)

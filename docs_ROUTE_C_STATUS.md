@@ -1,27 +1,44 @@
-# Route C (hybrid digital twin) — status, 2026-11-05
+# Route C (hybrid digital twin) — status, retest 2026-11-05
 
-Run: `python -m pytest -q tests && python run_experiments.py` (CPU only, Mitsuba 3.9.1 `scalar_rgb`).
+Spec used (user-supplied): sleek 330 ml, H 145.4 mm, body Ø 58.0-58.4 (58.2 used), base Ø ~46.2;
+label canvas 182 x 139 mm (safe 173 x 133.5, 2 mm overlap); brand red #F40009.
+Pass criterion: CIEDE2000 on masked label, speculars (L*>92) excluded: median <= 2.0 AND p95 <= 5.0.
+**Assumed (not supplied):** lid Ø 52, neck taper 9 mm, base taper 5 mm, label vertically centred, lacquer IOR 1.5,
+ink roughness 0.18, aluminium roughness 0.22. Label art = flat #F40009 PLACEHOLDER (no licensed artwork/CAD).
 
-## What was executed and measured
-- Parametric 330 ml can mesh: bbox 66 x 115 x 66 mm (nominal dims, NOT caliper-measured).
-- 6/6 tests pass: mesh dimensions, linear intensity scaling, light superposition (mean within 2%),
-  env-rotation 360° identity, seed reproducibility (atol 1e-6; bitwise equality fails due to threaded
-  float summation, max diff 1.2e-7), ΔE2000 sanity.
-- Timings on 4 CPU cores: 8-view turntable at 384x576/64spp = 21 s; 2160x3240 @64spp = 72 s
-  (noisy; no denoiser; true 3840x2160 not yet tested).
-- Outputs: `outputs/turntable.png`, `relight_key_position.png`, `relight_color_intensity.png`,
-  `relight_env_rotation.png`, `can_4k.png`.
+## Executed results (renders only — no real can photographed; `python run_color_test.py`, outputs/color_test.json)
+| Case | median dE00 | p95 dE00 | Mean Lab (target 51.0, 77.5, 62.7) |
+|---|---|---|---|
+| A uniform white dome, no floor, analytic exposure | 7.69 | 13.55 | 52.2, 60.6, 36.3 |
+| B dome + floor + 18% grey-card normalisation | 7.46 | 12.83 | 52.1, 61.7, 37.4 |
+| C single softbox key + grey-card normalisation | 10.41 | 35.22 | 41.0, 56.6, 37.9 |
+| D CONTROL: matte ink, dome, analytic exposure | 0.20 | 0.69 | 51.5, 76.5, 61.5 |
 
-## What this does NOT show
-- No real can has been photographed or compared. PSNR/SSIM/ΔE harness exists but has no real reference yet.
-- Label is a PLACEHOLDER, not official Coca-Cola artwork; brand fidelity is untested.
-- Material parameters (Al conductor, roughness 0.18/0.22, IOR 1.5) are uncalibrated guesses.
-- Env map is synthetic, not a measured probe. Tests prove renderer self-consistency, not physical accuracy.
-- Routes A (Gaussian splatting) and B (NeRF) are not started: need a GPU and real footage.
-- Paper verification blocked (arxiv.org / sciencedirect.com not reachable).
+**All glossy cases FAIL the criterion; the matte control passes.** Control D shows the measurement chain
+(masking, Lab conversion, dE00) is correct. The failure in A-C is chroma loss (a* ~61 vs 77.5, b* ~36 vs 63): the
+modelled lacquer reflects white light on top of the red, desaturating it. Spec-excluded highlights (L*>92) are <0.5%
+of pixels, so exclusion does not remove this broad veil. The size of the veil depends on UNCALIBRATED gloss parameters,
+so 7-8 dE is a property of my guessed material, not a finding about a real can.
+Case C fails mainly because one-sided lighting makes cylinder shading span many L* levels: a hex-colour target
+cannot be met with directional light.
 
-## Needed next
-1. Official artwork/dieline file + caliper measurements (diameter, height, neck, base) of the real can.
-2. Real photos (held-out views incl. ColorChecker) to fit materials and score the render.
-3. GPU access (DGX Spark / Colab / Kaggle) for Routes A/B.
-4. Allow arxiv.org and sciencedirect.com for paper verification.
+## Implication for the acceptance test (needs a decision)
+A fixed hex target is not a valid reference for a glossy printed can. Define the reference as either
+(a) measured Lab of the real printed can under the same lighting (photo, grey-card/chart normalised), or
+(b) spectrophotometer reading of the label. Otherwise even a perfect twin can fail, or a wrong one pass.
+
+## What still blocks a pass without official artwork and CAD
+1. No official artwork: placeholder is flat red; logo, typography and fine print cannot be tested at all.
+2. No real-can photos: the pass criterion needs a photographed reference; nothing here is compared with reality.
+3. Gloss/IOR/roughness uncalibrated: needs fitting to the real can's photos (chart + chrome ball frames).
+4. Label sizing ambiguity: pi x 58.0-58.4 = 182.2-183.5 mm vs 182 mm canvas + 2 mm overlap, so seam handling is unresolved.
+5. Assumed profile (lid Ø, neck/base taper, label vertical offset): caliper measurements needed; no CAD.
+6. Acceptance reference undefined (see above).
+7. Splat/NeRF routes (A/B) not run: no GPU, no footage; KIRI no-turntable/busy-background capture is unvalidated.
+8. Papers unverified: arxiv.org / sciencedirect.com blocked in this session.
+
+## Other facts
+- 7/7 tests pass (renderer self-consistency, mesh dims 58.2 x 145.4 mm). They do not validate against a real can.
+- Perf (CPU, 4 cores, earlier geometry): 2160x3240 @64spp = 72 s, no denoiser. The AOV integrator is ~40x slower than
+  plain path tracing, so colour uses plain tracing plus a 4-spp mask pass.
+- Capture protocol: docs_CAPTURE_PROTOCOL.md. Wrap check: outputs/wrap_check.png.
