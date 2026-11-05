@@ -82,18 +82,19 @@ def build_scene(rig: Rig, obj_path, art_path, mask_path, spec: CanSpec = CanSpec
         d["env"] = {"type": "envmap", "filename": rig.env_path, "scale": rig.env_scale,
                     "to_world": T().rotate([0, 1, 0], rig.env_rotation_deg)}
     if aov:
-        d["integrator"] = {"type": "aov", "aovs": "idx:shape_index,uv:uv", "img": d["integrator"]}
+        d["integrator"] = {"type": "aov", "aovs": "idx:shape_index,uv:uv", "img": {"type": "direct"}}  # cheap: only idx/uv are used
     return mi.load_dict(d)
 
 def render_aov(rig: Rig, obj_path, art_path, mask_path, spp=256, seed=0):
-    """One pass -> (rgb, masks, uv). masks[name] = pixels FULLY covered by that shape (shape_index is averaged
-    over samples, so antialiased edge pixels fail the integer test). uv = mesh UV (u runs round the can,
-    v = y/height with v=0 at the bottom)."""
+    """-> (rgb, masks, uv). rgb: full path-traced render. masks[name]: pixels fully covered by that shape;
+    uv: mesh UV (u round the can, v = y/height, v=0 at bottom). Masks/uv come from a separate cheap 4-spp
+    pass (the AOV integrator is ~40x slower than plain path tracing, so it is NOT used for colour)."""
+    rgb = render(rig, obj_path, art_path, mask_path, spp=spp, seed=seed)
     sc = build_scene(rig, obj_path, art_path, mask_path, aov=True)
     ids = [s.id() for s in sc.shapes()]                          # aov idx is 1-based, 0 = background
-    out = np.array(mi.render(sc, spp=spp, seed=seed))
+    out = np.array(mi.render(sc, spp=4, seed=seed))
     masks = {n: np.abs(out[..., 3] - (i + 1)) < 1e-4 for i, n in enumerate(ids)}
-    return out[..., :3], masks, out[..., 4:6]
+    return rgb, masks, out[..., 4:6]
 
 def render(rig: Rig, obj_path, art_path, mask_path, spp=64, seed=0):
     sc = build_scene(rig, obj_path, art_path, mask_path)

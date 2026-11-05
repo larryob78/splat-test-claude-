@@ -11,7 +11,7 @@ sp=CanSpec(); TARGET=srgb_to_lin(np.array([0xF4,0x00,0x09])/255.)
 enc=lambda x: np.where(x<=.0031308,12.92*x,1.055*np.power(np.clip(x,0,None),1/2.4)-.055)
 lab=lambda lin: rgb2lab(np.clip(enc(lin),0,1).reshape(-1,1,3)).reshape(-1,3)
 LAB_T=lab(TARGET[None])[0]
-def measure(name, rig, normalise, spp=512):
+def measure(name, rig, normalise, spp=256):
     rgb,m,uv=render_aov(rig,*A,spp=spp)
     scale=np.ones(3)
     if normalise=="card":   # per-channel scale so the 18% grey card reads exactly 0.18
