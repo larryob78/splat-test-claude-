@@ -10,7 +10,7 @@ from brandsplats.hybrid.metrics import delta_e2000
 @pytest.fixture(scope="module")
 def assets(tmp_path_factory):
     d = tmp_path_factory.mktemp("a"); V, N, UV, F = build_can_mesh(); write_obj(f"{d}/can.obj", V, N, UV, F)
-    make_placeholder(f"{d}/art.png", f"{d}/mask.png", 1024, 384); make_env(f"{d}/env.exr")
+    make_placeholder(f"{d}/art.png", f"{d}/mask.png", CanSpec(), px=4); make_env(f"{d}/env.exr")
     return d, V
 
 def R(assets, rig, spp=128):
@@ -19,7 +19,14 @@ small = dict(width=192, height=288)
 
 def test_mesh_dimensions(assets):
     _, V = assets; ext = (V.max(0) - V.min(0)) * 1e3
-    assert abs(ext[1] - 115) < 1e-3 and abs(ext[0] - 66) < 1e-3 and abs(ext[2] - 66) < 1e-3
+    sp = CanSpec()
+    assert abs(ext[1] - 145.4) < 1e-2 and abs(ext[0] - 58.2) < 1e-2 and abs(ext[2] - 58.2) < 1e-2
+    assert 58.0 <= sp.diameter_mm <= 58.4 and abs(sp.base_diameter_mm - 46.2) < 1e-9
+
+def test_label_canvas_vs_circumference_documented(assets):
+    # 182 mm canvas vs pi*d: 182.2-183.5 mm over the stated 58.0-58.4 mm range -> canvas is NOT >= circumference + 2 mm overlap.
+    sp = CanSpec(); circ = np.pi * np.array([58.0, 58.4])
+    assert (circ > sp.label_w_mm).all()   # documents the ambiguity; see docs_ROUTE_C_STATUS.md
 
 def test_intensity_scaling_is_linear(assets):
     a = R(assets, Rig(lights=[Light(intensity=20)], **small)); b = R(assets, Rig(lights=[Light(intensity=40)], **small))

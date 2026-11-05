@@ -10,13 +10,23 @@ import numpy as np
 
 @dataclass
 class CanSpec:
-    diameter_mm: float = 66.0      # body outer diameter (nominal, unverified)
-    height_mm: float = 115.0       # total height incl. rim (nominal, unverified)
-    neck_taper_mm: float = 10.0    # height of top taper
-    top_diameter_mm: float = 54.0  # lid diameter after taper
-    base_taper_mm: float = 6.0     # bottom taper height
-    base_diameter_mm: float = 52.0
-    dome_depth_mm: float = 8.0     # concave bottom dome depth
+    # Sleek 330 ml (user-supplied 2026-11-05): height 145.4, body dia 58.0-58.4 (mid 58.2), base ~46.2.
+    diameter_mm: float = 58.2
+    height_mm: float = 145.4
+    base_diameter_mm: float = 46.2
+    # NOT supplied -> ASSUMED, flagged in reports:
+    neck_taper_mm: float = 9.0
+    top_diameter_mm: float = 52.0
+    base_taper_mm: float = 5.0
+    dome_depth_mm: float = 8.0
+    # Label wrap canvas (user-supplied): 182 x 139 mm; safe 173 x 133.5; 2 mm overlap
+    label_w_mm: float = 182.0
+    label_h_mm: float = 139.0
+    label_safe_w_mm: float = 173.0
+    label_safe_h_mm: float = 133.5
+    label_overlap_mm: float = 2.0
+    @property
+    def label_y0_mm(self): return (self.height_mm - self.label_h_mm) / 2   # ASSUMED vertically centred
 
     def profile(self):
         """(radius, height, v) samples from bottom centre to top centre, in metres."""
@@ -24,19 +34,19 @@ class CanSpec:
         pts = []
         # concave dome bottom, centre -> base ring
         for t in np.linspace(0, 1, 8):
-            pts.append((self.base_diameter_mm / 2 * t * 0.9, self.dome_depth_mm * (1 - t) ** 2 * 0.0 + self.dome_depth_mm * (1 - t), 0.0))
+            pts.append((self.base_diameter_mm / 2 * t * 0.9, self.dome_depth_mm * (1 - t), 0.0))
         pts.append((self.base_diameter_mm / 2, 0.0, 0.0))
         y0 = self.base_taper_mm
         y1 = h - self.neck_taper_mm
         for t in np.linspace(0, 1, 6)[1:]:
-            pts.append((self.base_diameter_mm / 2 + (r - self.base_diameter_mm / 2) * np.sin(t * np.pi / 2), y0 * t, 0.0))
+            pts.append((self.base_diameter_mm / 2 + (r - self.base_diameter_mm / 2) * np.sin(t * np.pi / 2), y0 * t, y0 * t / h))
         # printable straight wall
         for t in np.linspace(0, 1, 12)[1:]:
-            pts.append((r, y0 + (y1 - y0) * t, t))
+            pts.append((r, y0 + (y1 - y0) * t, (y0 + (y1 - y0) * t) / h))
         # neck taper
         for t in np.linspace(0, 1, 8)[1:]:
             s = np.sin(t * np.pi / 2)
-            pts.append((r + (self.top_diameter_mm / 2 - r) * s, y1 + self.neck_taper_mm * t, 1.0))
+            pts.append((r + (self.top_diameter_mm / 2 - r) * s, y1 + self.neck_taper_mm * t, (y1 + self.neck_taper_mm * t) / h))
         pts.append((self.top_diameter_mm / 2 - 2, h - 1.5, 1.0))
         pts.append((0.0, h - 1.5, 1.0))
         a = np.array(pts)
@@ -60,7 +70,7 @@ def build_can_mesh(spec: CanSpec = CanSpec(), n_around: int = 256):
         for i, t in enumerate(th):
             V.append([r * np.cos(t), y, r * np.sin(t)])
             N.append([nrm2[j, 0] * np.cos(t), nrm2[j, 1], nrm2[j, 0] * np.sin(t)])
-            UV.append([i / n_around, v])
+            UV.append([1.0 - i / n_around, v])  # u runs clockwise seen from above so the label is not mirrored
     F = []
     w = n_around + 1
     for j in range(n_p - 1):
@@ -72,7 +82,7 @@ def build_can_mesh(spec: CanSpec = CanSpec(), n_around: int = 256):
 def write_obj(path, V, N, UV, F):
     with open(path, "w") as f:
         for v in V: f.write("v %.6f %.6f %.6f\n" % tuple(v))
-        for u in UV: f.write("vt %.6f %.6f\n" % (u[0], 1.0 - u[1]))  # image row 0 = top
+        for u in UV: f.write("vt %.6f %.6f\n" % (u[0], u[1]))  # Mitsuba: v=0 is image BOTTOM
         for n in N: f.write("vn %.6f %.6f %.6f\n" % tuple(n))
         for a, b, c in F + 1:
             f.write(f"f {a}/{a}/{a} {b}/{b}/{b} {c}/{c}/{c}\n")
