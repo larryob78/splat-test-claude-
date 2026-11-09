@@ -23,8 +23,10 @@ def make_placeholder(path_rgb, path_mask, spec, px=10):
     sw, sh = spec.label_safe_w_mm * px, spec.label_safe_h_mm * px
     d.rectangle([(W - sw) / 2, (ch - sh) / 2, (W + sw) / 2, (ch + sh) / 2], outline=(255, 255, 255), width=4)
     d.rectangle([W - spec.label_overlap_mm * px, 0, W, ch], fill=(255, 220, 0))  # seam/overlap strip
-    f = ImageFont.load_default(size=120)
-    d.text((W // 2, ch // 2), "PLACEHOLDER - NOT OFFICIAL ARTWORK", fill=(255, 255, 255), font=f, anchor="mm")
+    for k in range(4):   # short word repeated every 90 deg so OCR/inspection works from any quarter-turn
+        x = int(W * (k + .5) / 4)
+        d.text((x, ch // 2), "BRAND", fill=(255, 255, 255), font=ImageFont.load_default(size=200), anchor="mm")
+        d.text((x, ch // 2 + 190), "PLACEHOLDER", fill=(255, 255, 255), font=ImageFont.load_default(size=70), anchor="mm")
     art, mask = make_atlas_from_canvas(c, spec, px); art.save(path_rgb); mask.save(path_mask)
 
 
@@ -34,6 +36,9 @@ def make_brand_mask(path_mask, spec, px=10, grow_px=8):
     import cv2
     W, ch, H = int(spec.label_w_mm * px), int(spec.label_h_mm * px), int(spec.height_mm * px)
     c = Image.new("L", (W, ch), 0); d = ImageDraw.Draw(c)
-    d.text((W // 2, ch // 2), "PLACEHOLDER - NOT OFFICIAL ARTWORK", fill=255, font=ImageFont.load_default(size=120), anchor="mm")
+    for k in range(4):
+        x = int(W * (k + .5) / 4)
+        d.text((x, ch // 2), "BRAND", fill=255, font=ImageFont.load_default(size=200), anchor="mm")
+        d.text((x, ch // 2 + 190), "PLACEHOLDER", fill=255, font=ImageFont.load_default(size=70), anchor="mm")
     top = int(round(H - (spec.label_y0_mm + spec.label_h_mm) * px)); m = np.zeros((H, W), np.uint8); m[top:top + ch] = np.array(c)
     m = cv2.dilate(m, np.ones((grow_px, grow_px), np.uint8)); Image.fromarray(m).save(path_mask)

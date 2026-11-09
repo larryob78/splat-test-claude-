@@ -42,3 +42,15 @@ A fixed hex target is not a valid reference for a glossy printed can. Define the
 - Perf (CPU, 4 cores, earlier geometry): 2160x3240 @64spp = 72 s, no denoiser. The AOV integrator is ~40x slower than
   plain path tracing, so colour uses plain tracing plus a 4-spp mask pass.
 - Capture protocol: docs_CAPTURE_PROTOCOL.md. Wrap check: outputs/wrap_check.png.
+
+## Route D scaffolding (finishing pass), 2026-11-09 - gates validated with stand-ins only
+Code: `brandsplats/finish/channels.py` (rgb, can mask, depth, normals, albedo, ink and brand-protect masks per pixel),
+`brandsplats/finish/gates.py` (OCR regression gate, dE00 on protected pixels, outline-retention gate, `composite_protect`).
+Tests (13/13 pass in the full suite): `tests/test_finish_gates.py` uses SYNTHETIC stand-ins, not a real diffusion model:
+- mild grain+gain passes; identity passes; hue-shifted red fails colour gate; warped lettering and smeared image fail.
+- `composite_protect` restores the brand pixels exactly (dE00 = 0) in all cases, but does NOT repair damage outside the
+  protected area: warp and smear are still rejected by the outline gate. Only the hue case passes after compositing.
+- Unverified: for `warp`, OCR still fails after compositing although lettering pixels are identical to the base (cause unknown).
+- The 'mild' stand-in originally failed the p95 limit because blur on thin lettering is a real change; blur was removed from it.
+- Placeholder art now repeats "BRAND"/"PLACEHOLDER" every 90 deg so OCR works from any quarter turn (earlier long string wrapped off-edge).
+NOT DONE: no real finishing model has run. Runway API unreachable here (host blocked, no key set); GPT Image 2.5 (4 credits/image) is the planned model.

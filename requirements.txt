@@ -4,3 +4,4 @@ pillow
 scikit-image
 opencv-python-headless
 pytest
+rapidocr-onnxruntime

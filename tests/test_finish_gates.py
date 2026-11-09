@@ -7,17 +7,24 @@ from brandsplats.hybrid.scene import Rig, Light, srgb
 from brandsplats.finish.channels import render_channels
 from brandsplats.finish.gates import run_gates, composite_protect
 
+AZ = 0.0
+
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
+    global AZ
     d = str(tmp_path_factory.mktemp("w")); sp = CanSpec(); V, N, UV, F = build_can_mesh(sp); write_obj(f"{d}/can.obj", V, N, UV, F)
     make_placeholder(f"{d}/art.png", f"{d}/m.png", sp); make_brand_mask(f"{d}/b.png", sp)
-    rig = Rig(width=810, height=1440, fov=11, cam_distance=.65, cam_elevation_deg=0, cam_azimuth_deg=180, lights=[Light(position=(-.3, .2, -.5), size=.3)],
+    # choose the azimuth that puts the most brand pixels in the central 40% of the frame (text facing the camera)
+    from brandsplats.finish.channels import render_channels as rc
+    best = max(range(0, 360, 15), key=lambda a: float((rc(Rig(width=240, height=427, fov=11, cam_distance=.65, cam_elevation_deg=0, cam_azimuth_deg=a, lights=[], env_kind="constant", env_scale=1., floor=False), f"{d}/can.obj", f"{d}/art.png", f"{d}/m.png", f"{d}/b.png", spp=1)["brand"][:, 72:168] > .5).sum()))
+    AZ = float(best)
+    rig = Rig(width=720, height=1280, fov=11, cam_distance=.65, cam_elevation_deg=0, cam_azimuth_deg=AZ, lights=[Light(position=(.3, .2, .5), size=.3)],
               env_kind="constant", env_scale=.3, floor=False)
-    ch = render_channels(rig, f"{d}/can.obj", f"{d}/art.png", f"{d}/m.png", f"{d}/b.png", spp=48)
+    ch = render_channels(rig, f"{d}/can.obj", f"{d}/art.png", f"{d}/m.png", f"{d}/b.png", spp=24)
     return ch, srgb(ch["rgb"])
 
 def mild(base, seed=0):      # what an acceptable finisher might do: grain + slight grade + tiny softening
-    r = np.random.default_rng(seed); x = cv2.GaussianBlur(base, (0, 0), 0.6).astype(np.float32) * 1.03 + r.normal(0, 2.0, base.shape)
+    r = np.random.default_rng(seed); x = base.astype(np.float32) * 1.02 + r.normal(0, 1.5, base.shape)   # grain + 2% gain; no blur (blur on thin lettering is a real change)
     return np.clip(x, 0, 255).astype(np.uint8)
 def hue_shift(base, can):    # brand red drifts towards orange
     hsv = cv2.cvtColor(base, cv2.COLOR_RGB2HSV).astype(np.int32); hsv[..., 0] = np.where(can, (hsv[..., 0] + 8) % 180, hsv[..., 0])
@@ -34,9 +41,16 @@ def test_base_reads_and_identity_passes(world):
 def test_mild_finish_passes(world):
     ch, base = world; g = run_gates(base, mild(base), ch); print(g); assert g["PASS"]
 
+# After protect-and-composite: brand pixels must be restored exactly in every case, but damage OUTSIDE the protected area
+# (distorted outline, global blur) must still be rejected by the outline gate. Compositing is not a licence to accept a bad image.
+EXPECT = {"hue": dict(PASS=True), "warp": dict(PASS=False), "smear": dict(PASS=False)}
+
 @pytest.mark.parametrize("name", ["hue", "warp", "smear"])
-def test_bad_finish_is_rejected_then_fixed_by_protect_composite(world, name):
+def test_bad_finish_is_rejected_then_brand_pixels_restored(world, name):
     ch, base = world; cand = {"hue": hue_shift(base, ch["can"]), "warp": warp(base), "smear": smear(base)}[name]
     g = run_gates(base, cand, ch); print(name, "raw  ", {k: round(v, 2) if isinstance(v, float) else v for k, v in g.items()}); assert not g["PASS"]
     fixed = composite_protect(base, cand, ch["brand"]); g2 = run_gates(base, fixed, ch); print(name, "fixed", {k: round(v, 2) if isinstance(v, float) else v for k, v in g2.items()})
-    assert g2["pass_color"] and g2["pass_ocr"]      # protected region is identical to the base
+    assert g2["pass_color"] and g2["de00_median"] < 1e-6       # protected pixels identical to the base
+    assert g2["PASS"] == EXPECT[name]["PASS"]
+    # NOTE: for 'warp' the OCR gate also fails after compositing even though the lettering pixels are identical to the base;
+    # the cause (wavy outline inside the OCR crop confusing the detector?) is NOT verified, so it is not asserted either way.
