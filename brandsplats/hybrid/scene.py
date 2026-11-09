@@ -85,7 +85,7 @@ def build_scene(rig: Rig, obj_path, art_path, mask_path, spec: CanSpec = CanSpec
         d["env"] = {"type": "envmap", "filename": rig.env_path, "scale": rig.env_scale,
                     "to_world": T().rotate([0, 1, 0], rig.env_rotation_deg)}
     if aov:
-        d["integrator"] = {"type": "aov", "aovs": "idx:shape_index,uv:uv", "img": {"type": "direct"}}  # cheap: only idx/uv are used
+        d["integrator"] = {"type": "aov", "aovs": "idx:shape_index,uv:uv,dep:depth,nn:sh_normal", "img": {"type": "direct"}}  # cheap: only idx/uv are used
     return mi.load_dict(d)
 
 def render_aov(rig: Rig, obj_path, art_path, mask_path, spp=256, seed=0):
